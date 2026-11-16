@@ -56,4 +56,25 @@ public class MarcasAutosEndpointTests : IClassFixture<MarcasAutosApiFactory>
         var schema = await response.Content.ReadAsStringAsync();
         Assert.Contains("MarcasAutos", schema);
     }
+
+    [Fact]
+    public async Task GetSwaggerDocument_DocumentsLookupFiltersAndPagination()
+    {
+        var response = await _client.GetAsync("/swagger/v1/swagger.json");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var schema = await response.Content.ReadAsStringAsync();
+
+        // The lookup endpoint and the query parameters are part of the contract.
+        Assert.Contains("/api/marcas-autos/{id}", schema);
+        Assert.Contains("\"nombre\"", schema);
+        Assert.Contains("\"page\"", schema);
+        Assert.Contains("\"pageSize\"", schema);
+
+        // The usage guide (filters, pagination headers) reaches the document
+        // through the XML remarks of the operation and the API description.
+        Assert.Contains("X-Total-Count", schema);
+        Assert.Contains("sin distinguir mayúsculas", schema);
+    }
 }

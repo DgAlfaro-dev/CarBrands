@@ -30,7 +30,7 @@ public class MarcasAutosControllerTests : IAsyncLifetime
     [Fact]
     public async Task GetAll_WithSeededData_ReturnsOkWithThreeBrands()
     {
-        var response = await _controller.GetAll(CancellationToken.None);
+        var response = await _controller.GetAll(null, null, null, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(response.Result);
         var marcas = Assert.IsType<List<MarcaAutoResponse>>(okResult.Value);
@@ -40,7 +40,7 @@ public class MarcasAutosControllerTests : IAsyncLifetime
     [Fact]
     public async Task GetAll_ReturnsSeededBrands_WithIdAndName()
     {
-        var response = await _controller.GetAll(CancellationToken.None);
+        var response = await _controller.GetAll(null, null, null, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(response.Result);
         var marcas = Assert.IsType<List<MarcaAutoResponse>>(okResult.Value);
@@ -59,7 +59,7 @@ public class MarcasAutosControllerTests : IAsyncLifetime
         _context.MarcasAutos.Add(new MarcaAuto { Id = 4, Nombre = "Alfa" });
         await _context.SaveChangesAsync();
 
-        var response = await _controller.GetAll(CancellationToken.None);
+        var response = await _controller.GetAll(null, null, null, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(response.Result);
         var marcas = Assert.IsType<List<MarcaAutoResponse>>(okResult.Value);
@@ -76,7 +76,7 @@ public class MarcasAutosControllerTests : IAsyncLifetime
         await using var context = MarcasAutosContextFactory.Create(seedDefaultData: false);
         var controller = new MarcasAutosController(context);
 
-        var response = await controller.GetAll(CancellationToken.None);
+        var response = await controller.GetAll(null, null, null, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(response.Result);
         var marcas = Assert.IsType<List<MarcaAutoResponse>>(okResult.Value);

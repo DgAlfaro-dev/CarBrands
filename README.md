@@ -11,9 +11,9 @@ entorno completo por **Docker Compose**.
 | `DbContext` conectado a PostgreSQL con EF | `Data/MarcasAutosDbContext.cs` + provider Npgsql, cadena por variables de entorno |
 | Migración de la tabla `MarcasAutos` | `Migrations/..._CreateMarcasAutos.cs` (tabla + `__EFMigrationsHistory`) |
 | Data seed con ≥ 3 marcas | `HasData` en `MarcaAutoConfiguration` (Toyota, Ford, Chevrolet) versionado **dentro** de la migración |
-| `MarcasAutosController` con GET de todas las marcas | `GET /api/marcas-autos` → `200` con DTO |
-| Pruebas XUnit con contexto en memoria | 10 tests: unitarios (EF InMemory) + integración (`WebApplicationFactory`) |
-| Cobertura ≥ 70% | **95.89% líneas / 75% ramas**, umbral 70% aplicado en cada `dotnet test` |
+| `MarcasAutosController` con listado, filtro, paginación y consulta por id | `GET /api/marcas-autos` y `GET /api/marcas-autos/{id}` |
+| Pruebas XUnit con contexto en memoria | Pruebas unitarias (EF InMemory) + integración (`WebApplicationFactory`) |
+| Cobertura ≥ 70% | **98.65% líneas / 95.83% ramas**, umbral 70% aplicado en cada `dotnet test` |
 | `docker-compose.yml` (PostgreSQL + API) | Healthcheck, volumen, credenciales y connection string por variables de entorno |
 
 ## Stack tecnológico
@@ -115,9 +115,9 @@ docker run --rm -p 8080:8080 \
 dotnet test
 ```
 
-- **10 tests** en verde (unitarios con contexto **en memoria** + integración con la API real).
+- **36 tests** en verde (unitarios con contexto **en memoria** + integración con la API real).
 - Genera el reporte en `tests/PruebaBackend.Api.Tests/coverage/coverage.cobertura.xml`.
-- **Cobertura actual: 95.89% líneas · 75% ramas · 100% métodos.**
+- **Cobertura verificada: 98.65% líneas · 95.83% ramas · 100% métodos.**
 - El `csproj` de tests define umbrales (**70% líneas y ramas**): si la cobertura
   baja del mínimo, `dotnet test` **falla** (igual que en CI).
 - Exclusiones: solo las migraciones (código generado) y el propio assembly de tests.
@@ -129,7 +129,30 @@ dotnet test
 
 ### `GET /api/marcas-autos`
 
-Devuelve todas las marcas ordenadas por id.
+Devuelve las marcas ordenadas por id. Admite filtro por nombre y paginación:
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `nombre` | texto, opcional | Busca coincidencias parciales sin distinguir mayúsculas. Por ejemplo, `?nombre=toy` encuentra `Toyota`. Los espacios al inicio y al final se ignoran. |
+| `page` | entero, opcional | Número de página, empezando en `1`. Si se envía sin `pageSize`, el tamaño de página predeterminado es `10`. |
+| `pageSize` | entero, opcional | Resultados por página; rango permitido: `1` a `100`. Si se envía sin `page`, se usa la página `1`. |
+
+Si no se envía `page` ni `pageSize`, se conserva el listado completo. Se pueden combinar el filtro y la paginación, por ejemplo:
+
+```http
+GET /api/marcas-autos?nombre=to&page=1&pageSize=10
+```
+
+Cuando se solicita paginación, la respuesta incluye estas cabeceras. `X-Total-Count` cuenta los resultados después del filtro y antes de paginar:
+
+| Cabecera | Descripción |
+|---|---|
+| `X-Total-Count` | Cantidad total de resultados que coinciden con el filtro. |
+| `X-Page` | Página devuelta. |
+| `X-Page-Size` | Tamaño aplicado a cada página. |
+| `X-Total-Pages` | Cantidad total de páginas. |
+
+`page` menor que `1`, o `pageSize` fuera del rango permitido, devuelve `400 Bad Request` con `ValidationProblemDetails`. Una página que supera la última disponible devuelve `200 OK` con una lista vacía y las cabeceras de paginación.
 
 ```json
 [
@@ -142,8 +165,13 @@ Devuelve todas las marcas ordenadas por id.
 | Código | Cuando |
 |---|---|
 | `200 OK` | Siempre que la base responda (lista vacía si no hay filas) |
+| `400 Bad Request` + ValidationProblemDetails | `page` o `pageSize` no válido |
 | `500` + ProblemDetails | Error inesperado de base de datos (RFC 7807) |
 | `404` | Ruta desconocida |
+
+### `GET /api/marcas-autos/{id}`
+
+Devuelve una marca por su identificador. Por ejemplo, `GET /api/marcas-autos/1` devuelve `200 OK` con `{ "id": 1, "nombre": "Toyota" }`. Si no existe una marca con ese id, responde `404 Not Found` con `ProblemDetails`.
 
 Swagger UI: http://localhost:8080/swagger (habilitado en todos los entornos para
 que la API pueda evaluarse donde se despliegue).
