@@ -73,18 +73,18 @@ del propio repositorio: no requiere cuentas ni secretos adicionales). En
 cualquier máquina con Docker:
 
 ```bash
-docker pull ghcr.io/dgalfaro-dev/cardbrands:latest
+docker pull ghcr.io/dgalfaro-dev/carbrands:latest
 
 docker run --rm -p 8080:8080 \
   -e ConnectionStrings__Postgres="Host=<host-del-postgres>;Port=5432;Database=prueba_backend;Username=postgres;Password=postgres" \
-  ghcr.io/dgalfaro-dev/cardbrands:latest
+  ghcr.io/dgalfaro-dev/carbrands:latest
 ```
 
 | Recurso | URL |
 |---|---|
 | Swagger UI | http://localhost:8080/swagger |
 | Endpoint | `GET http://localhost:8080/api/marcas-autos` |
-| Página de la imagen | https://github.com/DgAlfaro-dev/CardBrands/pkgs/container/cardbrands |
+| Página de la imagen | https://github.com/DgAlfaro-dev/CarBrands/pkgs/container/carbrands |
 
 - La imagen contiene **solo la API** (aplica sus migraciones al arrancar); para
   levantar API y PostgreSQL juntos en una máquina nueva, usa
