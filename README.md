@@ -65,6 +65,33 @@ para ajustarlos:
 | `ASPNETCORE_ENVIRONMENT` | `Development` | Entorno de la API |
 | `ConnectionStrings__Postgres` | — | Cadena de conexión (ya la define compose hacia el servicio `postgres`) |
 
+### Imagen publicada en GitHub Container Registry
+
+Cada push a `main` ejecuta el workflow `.github/workflows/docker-publish.yml`,
+que construye la imagen multi-stage y la publica en **`ghcr.io`** (con el token
+del propio repositorio: no requiere cuentas ni secretos adicionales). En
+cualquier máquina con Docker:
+
+```bash
+docker pull ghcr.io/dgalfaro-dev/cardbrands:latest
+
+docker run --rm -p 8080:8080 \
+  -e ConnectionStrings__Postgres="Host=<host-del-postgres>;Port=5432;Database=prueba_backend;Username=postgres;Password=postgres" \
+  ghcr.io/dgalfaro-dev/cardbrands:latest
+```
+
+| Recurso | URL |
+|---|---|
+| Swagger UI | http://localhost:8080/swagger |
+| Endpoint | `GET http://localhost:8080/api/marcas-autos` |
+| Página de la imagen | https://github.com/DgAlfaro-dev/CardBrands/pkgs/container/cardbrands |
+
+- La imagen contiene **solo la API** (aplica sus migraciones al arrancar); para
+  levantar API y PostgreSQL juntos en una máquina nueva, usa
+  `docker compose up --build`.
+- Etiquetas disponibles: `latest` (último push a `main`) y `sha-<commit>`
+  (versión exacta y reproducible).
+
 ## Ejecutar en local (sin Docker)
 
 1. Levanta un PostgreSQL (por ejemplo con este fragmento suelto):
