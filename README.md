@@ -41,7 +41,7 @@ Al terminar:
 
 | Recurso | URL |
 |---|---|
-| API | http://localhost:8080 (la raíz `/` redirige a `/swagger`) |
+| API | http://localhost:8080 |
 | Swagger UI | http://localhost:8080/swagger |
 | Endpoint | `GET http://localhost:8080/api/marcas-autos` |
 
@@ -82,7 +82,6 @@ docker run --rm -p 8080:8080 \
 
 | Recurso | URL |
 |---|---|
-| Raíz | `https://…` redirige a `/swagger` |
 | Swagger UI | http://localhost:8080/swagger |
 | Endpoint | `GET http://localhost:8080/api/marcas-autos` |
 | Página de la imagen | https://github.com/DgAlfaro-dev/CarBrands/pkgs/container/carbrands |
