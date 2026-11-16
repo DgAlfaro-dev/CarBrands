@@ -18,8 +18,13 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
-# .NET 8 images listen on 8080 as a non-privileged user.
-ENV ASPNETCORE_URLS=http://+:8080
+# .NET 8 images listen on 8080 as a non-privileged user. The bind address is
+# explicit IPv4: PaaS hosts such as Render do not support IPv6 and expect
+# 0.0.0.0 (their docs call this out as a common misconfiguration).
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
+# Workstation GC instead of server GC: free PaaS instances ship 512 MB and
+# server GC heap reservation can exhaust them during startup.
+ENV DOTNET_gcServer=0
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "PruebaBackend.Api.dll"]
