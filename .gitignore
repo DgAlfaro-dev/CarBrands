@@ -1,0 +1,45 @@
+# =========================================
+# .NET
+# =========================================
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.ncrunch*
+_NCrunch_*
+
+# =========================================
+# Tests and coverage
+# =========================================
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+coverage.info
+*.trx
+
+# =========================================
+# Environment and secrets
+# =========================================
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+
+# =========================================
+# Logs
+# =========================================
+*.log
+
+# =========================================
+# OS / IDE
+# =========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

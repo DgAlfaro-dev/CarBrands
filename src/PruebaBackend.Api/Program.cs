@@ -1,0 +1,82 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using PruebaBackend.Api.Data;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllers();
+
+// ProblemDetails (RFC 7807): unhandled errors respond with JSON carrying type,
+// title and status instead of an empty body or an HTML page.
+builder.Services.AddProblemDetails();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "API de Marcas de Autos",
+        Version = "v1",
+        Description = "Prueba de conocimiento backend: catálogo MarcasAutos sobre PostgreSQL."
+    });
+});
+
+// The connection string comes from configuration (appsettings.json locally,
+// ConnectionStrings__Postgres environment variable in Docker) so credentials
+// are never hardcoded in the source code.
+const string PostgresConnectionStringName = "Postgres";
+var postgresConnectionString = builder.Configuration.GetConnectionString(PostgresConnectionStringName);
+
+if (string.IsNullOrWhiteSpace(postgresConnectionString))
+{
+    throw new InvalidOperationException(
+        $"Falta la cadena de conexión '{PostgresConnectionStringName}'. " +
+        "Defínela en appsettings.json o en la variable de entorno ConnectionStrings__Postgres.");
+}
+
+builder.Services.AddDbContext<MarcasAutosDbContext>(options =>
+    options.UseNpgsql(postgresConnectionString));
+
+var app = builder.Build();
+
+// First in the pipeline: any unhandled exception becomes a status-500
+// ProblemDetails response (also recorded in the logs).
+app.UseExceptionHandler();
+
+// Configure the HTTP request pipeline.
+// Swagger is enabled in every environment: this API is a knowledge test and
+// must be explorable (UI + schema) wherever it is deployed.
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "API de Marcas de Autos v1");
+});
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+// Apply pending migrations on startup so `docker compose up` leaves the
+// database populated (table + seed) without manual steps.
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<MarcasAutosDbContext>();
+
+    // Only migrate on a relational provider (PostgreSQL). Integration tests
+    // swap the context for InMemory, which does not support migrations.
+    if (dbContext.Database.IsRelational())
+    {
+        await dbContext.Database.MigrateAsync();
+    }
+}
+
+app.Run();
+
+// The compiler synthesizes the Program class as internal from top-level
+// statements; this partial modifier makes it public so WebApplicationFactory<Program>
+// can boot the API in integration tests (pattern documented by
+// Microsoft.AspNetCore.Mvc.Testing).
+public partial class Program
+{
+}

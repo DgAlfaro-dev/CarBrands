@@ -1,0 +1,43 @@
+# Orchestration for the backend test: PostgreSQL + REST API.
+# Usage: docker compose up --build   (full instructions in README.md)
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-prueba_backend}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      # Configurable host port: on machines where 5432 is already taken
+      # (e.g. another system PostgreSQL), just define POSTGRES_HOST_PORT
+      # in .env (see .env.example).
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # The API only starts once PostgreSQL responds, avoiding the typical
+      # race between the database container and the app on a fresh `up`.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-prueba_backend}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Development by default so local evaluations can see detail; it can be
+      # changed via environment variable without editing the file.
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      # The API connects using the service name inside the compose network
+      # (Host=postgres), not localhost.
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-prueba_backend};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
+    ports:
+      - "${API_HOST_PORT:-8080}:8080"
+
+volumes:
+  postgres_data:
