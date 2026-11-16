@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
 using PruebaBackend.Api.Dtos;
 using PruebaBackend.Api.Tests.Infrastructure;
 
@@ -11,10 +12,12 @@ namespace PruebaBackend.Api.Tests.Integration;
 /// </summary>
 public class MarcasAutosEndpointTests : IClassFixture<MarcasAutosApiFactory>
 {
+    private readonly MarcasAutosApiFactory _factory;
     private readonly HttpClient _client;
 
     public MarcasAutosEndpointTests(MarcasAutosApiFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
@@ -51,5 +54,18 @@ public class MarcasAutosEndpointTests : IClassFixture<MarcasAutosApiFactory>
 
         var schema = await response.Content.ReadAsStringAsync();
         Assert.Contains("MarcasAutos", schema);
+    }
+
+    [Fact]
+    public async Task GetRoot_RedirectsToSwaggerUi()
+    {
+        // Auto-redirect disabled: the assertion is on the redirect itself.
+        using var noRedirectClient = _factory.CreateClient(
+            new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var response = await noRedirectClient.GetAsync("/");
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/swagger", response.Headers.Location?.OriginalString);
     }
 }

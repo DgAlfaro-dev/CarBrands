@@ -57,6 +57,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// The API exposes no resource at the base path: redirect to the interactive
+// docs so a bare deployment URL (Render, Docker, local) lands somewhere useful.
+app.MapGet("/", () => Results.Redirect("/swagger"));
+
 // Apply pending migrations on startup so `docker compose up` leaves the
 // database populated (table + seed) without manual steps.
 using (var scope = app.Services.CreateScope())
