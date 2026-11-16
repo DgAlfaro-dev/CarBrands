@@ -13,7 +13,7 @@ entorno completo por **Docker Compose**.
 | Data seed con ≥ 3 marcas | `HasData` en `MarcaAutoConfiguration` (Toyota, Ford, Chevrolet) versionado **dentro** de la migración |
 | `MarcasAutosController` con listado, filtro, paginación y consulta por id | `GET /api/marcas-autos` y `GET /api/marcas-autos/{id}` |
 | Pruebas XUnit con contexto en memoria | Pruebas unitarias (EF InMemory) + integración (`WebApplicationFactory`) |
-| Cobertura ≥ 70% | **98.68% líneas / 93.47% ramas**, umbral 70% aplicado en cada `dotnet test` |
+| Cobertura ≥ 70% | **98.39% líneas / 93.47% ramas**, umbral 70% aplicado en cada `dotnet test` |
 | `docker-compose.yml` (PostgreSQL + API) | Healthcheck, volumen, credenciales y connection string por variables de entorno |
 
 ## Stack tecnológico
@@ -117,7 +117,7 @@ dotnet test
 
 - **36 tests** en verde (unitarios con contexto **en memoria** + integración con la API real).
 - Genera el reporte en `tests/PruebaBackend.Api.Tests/coverage/coverage.cobertura.xml`.
-- **Cobertura verificada: 98.68% líneas · 93.47% ramas · 100% métodos.**
+- **Cobertura verificada: 98.39% líneas · 93.47% ramas · 100% métodos.**
 - El `csproj` de tests define umbrales (**70% líneas y ramas**): si la cobertura
   baja del mínimo, `dotnet test` **falla** (igual que en CI).
 - Exclusiones: solo las migraciones (código generado) y el propio assembly de tests.
