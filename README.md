@@ -63,7 +63,7 @@ para ajustarlos:
 | `API_HOST_PORT` | `8080` | Puerto de la API en el host |
 | `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | `prueba_backend` / `postgres` / `postgres` | Credenciales del contenedor (solo local) |
 | `ASPNETCORE_ENVIRONMENT` | `Development` | Entorno de la API |
-| `ConnectionStrings__Postgres` | — | Cadena de conexión (ya la define compose hacia el servicio `postgres`) |
+| `ConnectionStrings__Postgres` | — | Cadena de conexión (ya la define compose hacia el servicio `postgres`). Acepta el formato clave=valor **y** URL `postgres://` (la que entregan proveedores como Render), que se normaliza automáticamente al arrancar |
 
 ### Imagen publicada en GitHub Container Registry
 

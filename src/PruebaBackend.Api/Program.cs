@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using PruebaBackend.Api.Configuration;
 using PruebaBackend.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,7 +25,8 @@ builder.Services.AddSwaggerGen(options =>
 
 // The connection string comes from configuration (appsettings.json locally,
 // ConnectionStrings__Postgres environment variable in Docker) so credentials
-// are never hardcoded in the source code.
+// are never hardcoded in the source code. Providers such as Render supply a
+// postgres:// URI, which is normalized to key/value pairs below.
 const string PostgresConnectionStringName = "Postgres";
 var postgresConnectionString = builder.Configuration.GetConnectionString(PostgresConnectionStringName);
 
@@ -35,8 +37,11 @@ if (string.IsNullOrWhiteSpace(postgresConnectionString))
         "Defínela en appsettings.json o en la variable de entorno ConnectionStrings__Postgres.");
 }
 
+var normalizedPostgresConnectionString =
+    PostgresConnectionStringNormalizer.Normalize(postgresConnectionString);
+
 builder.Services.AddDbContext<MarcasAutosDbContext>(options =>
-    options.UseNpgsql(postgresConnectionString));
+    options.UseNpgsql(normalizedPostgresConnectionString));
 
 var app = builder.Build();
 

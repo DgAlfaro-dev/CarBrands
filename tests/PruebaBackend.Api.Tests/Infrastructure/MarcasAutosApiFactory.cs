@@ -12,7 +12,7 @@ namespace PruebaBackend.Api.Tests.Infrastructure;
 /// Swagger and auto-migration) replacing PostgreSQL with an in-memory database
 /// so integration tests do not depend on an external server.
 /// </summary>
-public sealed class MarcasAutosApiFactory : WebApplicationFactory<Program>
+public class MarcasAutosApiFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
