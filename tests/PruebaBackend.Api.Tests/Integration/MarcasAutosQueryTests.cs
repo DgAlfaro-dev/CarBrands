@@ -54,22 +54,24 @@ public class MarcasAutosQueryTests : IClassFixture<MarcasAutosApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var marcas = await response.Content.ReadFromJsonAsync<List<MarcaAutoResponse>>();
-        Assert.NotNull(marcas);
-        Assert.Single(marcas);
-        Assert.Equal("Toyota", marcas[0].Nombre);
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<MarcaAutoResponse>>();
+        Assert.NotNull(result);
+        Assert.Single(result.Data);
+        Assert.Equal("Toyota", result.Data[0].Nombre);
+        Assert.Equal(1, result.CurrentPage);
     }
 
     [Fact]
-    public async Task GetByNombre_WithoutMatches_ReturnsEmptyArray()
+    public async Task GetByNombre_WithoutMatches_ReturnsEmptyData()
     {
         var response = await _client.GetAsync("/api/marcas-autos?nombre=marca-inexistente");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var marcas = await response.Content.ReadFromJsonAsync<List<MarcaAutoResponse>>();
-        Assert.NotNull(marcas);
-        Assert.Empty(marcas);
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<MarcaAutoResponse>>();
+        Assert.NotNull(result);
+        Assert.Empty(result.Data);
+        Assert.Equal(0, result.TotalItems);
     }
 
     [Fact]
@@ -79,16 +81,15 @@ public class MarcasAutosQueryTests : IClassFixture<MarcasAutosApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var marcas = await response.Content.ReadFromJsonAsync<List<MarcaAutoResponse>>();
-        Assert.NotNull(marcas);
-        Assert.Equal(2, marcas.Count);
-        Assert.Equal("Toyota", marcas[0].Nombre);
-        Assert.Equal("Ford", marcas[1].Nombre);
-
-        Assert.Equal("3", Assert.Single(response.Headers.GetValues("X-Total-Count")));
-        Assert.Equal("1", Assert.Single(response.Headers.GetValues("X-Page")));
-        Assert.Equal("2", Assert.Single(response.Headers.GetValues("X-Page-Size")));
-        Assert.Equal("2", Assert.Single(response.Headers.GetValues("X-Total-Pages")));
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<MarcaAutoResponse>>();
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Data.Count);
+        Assert.Equal("Toyota", result.Data[0].Nombre);
+        Assert.Equal("Ford", result.Data[1].Nombre);
+        Assert.Equal(3, result.TotalItems);
+        Assert.Equal(1, result.CurrentPage);
+        Assert.Equal(2, result.PageSize);
+        Assert.Equal(2, result.TotalPages);
     }
 
     [Fact]
@@ -98,11 +99,11 @@ public class MarcasAutosQueryTests : IClassFixture<MarcasAutosApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var marcas = await response.Content.ReadFromJsonAsync<List<MarcaAutoResponse>>();
-        Assert.NotNull(marcas);
-        Assert.Single(marcas);
-        Assert.Equal("Chevrolet", marcas[0].Nombre);
-        Assert.Equal("2", Assert.Single(response.Headers.GetValues("X-Page")));
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<MarcaAutoResponse>>();
+        Assert.NotNull(result);
+        Assert.Single(result.Data);
+        Assert.Equal("Chevrolet", result.Data[0].Nombre);
+        Assert.Equal(2, result.CurrentPage);
     }
 
     [Fact]
@@ -112,10 +113,10 @@ public class MarcasAutosQueryTests : IClassFixture<MarcasAutosApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var marcas = await response.Content.ReadFromJsonAsync<List<MarcaAutoResponse>>();
-        Assert.NotNull(marcas);
-        Assert.Empty(marcas);
-        Assert.Equal("3", Assert.Single(response.Headers.GetValues("X-Total-Count")));
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<MarcaAutoResponse>>();
+        Assert.NotNull(result);
+        Assert.Empty(result.Data);
+        Assert.Equal(3, result.TotalItems);
     }
 
     [Fact]
@@ -125,11 +126,11 @@ public class MarcasAutosQueryTests : IClassFixture<MarcasAutosApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var marcas = await response.Content.ReadFromJsonAsync<List<MarcaAutoResponse>>();
-        Assert.NotNull(marcas);
-        Assert.Single(marcas);
-        Assert.Equal("1", Assert.Single(response.Headers.GetValues("X-Total-Count")));
-        Assert.Equal("1", Assert.Single(response.Headers.GetValues("X-Total-Pages")));
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<MarcaAutoResponse>>();
+        Assert.NotNull(result);
+        Assert.Single(result.Data);
+        Assert.Equal(1, result.TotalItems);
+        Assert.Equal(1, result.TotalPages);
     }
 
     [Fact]

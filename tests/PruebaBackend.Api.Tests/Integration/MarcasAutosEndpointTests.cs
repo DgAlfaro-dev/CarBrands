@@ -26,12 +26,14 @@ public class MarcasAutosEndpointTests : IClassFixture<MarcasAutosApiFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
 
-        var marcas = await response.Content.ReadFromJsonAsync<List<MarcaAutoResponse>>();
-        Assert.NotNull(marcas);
-        Assert.Equal(3, marcas.Count);
-        Assert.Contains(marcas, m => m.Nombre == "Toyota");
-        Assert.Contains(marcas, m => m.Nombre == "Ford");
-        Assert.Contains(marcas, m => m.Nombre == "Chevrolet");
+        var result = await response.Content.ReadFromJsonAsync<PagedResponse<MarcaAutoResponse>>();
+        Assert.NotNull(result);
+        Assert.Equal(3, result.Data.Count);
+        Assert.Contains(result.Data, m => m.Nombre == "Toyota");
+        Assert.Contains(result.Data, m => m.Nombre == "Ford");
+        Assert.Contains(result.Data, m => m.Nombre == "Chevrolet");
+        Assert.Equal(1, result.CurrentPage);
+        Assert.Equal(10, result.PageSize);
     }
 
     // The root path is intentionally NOT an endpoint: only /api/marcas-autos
@@ -71,10 +73,12 @@ public class MarcasAutosEndpointTests : IClassFixture<MarcasAutosApiFactory>
         Assert.Contains("\"nombre\"", schema);
         Assert.Contains("\"page\"", schema);
         Assert.Contains("\"pageSize\"", schema);
+        Assert.Contains("\"currentPage\"", schema);
+        Assert.Contains("\"data\"", schema);
 
-        // The usage guide (filters, pagination headers) reaches the document
+        // The usage guide (filters and pagination metadata) reaches the document
         // through the XML remarks of the operation and the API description.
-        Assert.Contains("X-Total-Count", schema);
+        Assert.Contains("totalItems", schema);
         Assert.Contains("sin distinguir mayúsculas", schema);
     }
 }

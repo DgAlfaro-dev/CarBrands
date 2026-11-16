@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
@@ -44,40 +43,41 @@ public class MarcasAutosController : ControllerBase
     /// | `page` | `/api/marcas-autos?page=2` | Página a devolver, empezando en **1**. |
     /// | `pageSize` | `/api/marcas-autos?pageSize=10` | Filas por página, entre **1 y 100**. |
     ///
-    /// Si no envías `page` ni `pageSize` se devuelven **todas** las filas y no
-    /// se agregan cabeceras (formato original del endpoint). Si envías solo uno
-    /// de los dos, el otro usa su valor por defecto: `page = 1`,
-    /// `pageSize = 10`.
+    /// La respuesta siempre es un objeto paginado con `data`, `currentPage`,
+    /// `pageSize`, `totalItems` y `totalPages`. Si omites `page` o `pageSize`,
+    /// se usan `page = 1` y `pageSize = 10`.
     ///
-    /// ## Cabeceras de respuesta (solo cuando hay paginación)
+    /// ## Metadatos de paginación en la respuesta
     ///
-    /// | Cabecera | Ejemplo | Descripción |
-    /// |---|---|---|
-    /// | `X-Total-Count` | `3` | Total de filas que cumplen el filtro, **antes** de paginar. |
-    /// | `X-Page` | `2` | Página devuelta. |
-    /// | `X-Page-Size` | `10` | Tamaño de página aplicado. |
-    /// | `X-Total-Pages` | `1` | Total de páginas disponibles. |
+    /// | Campo | Descripción |
+    /// |---|---|
+    /// | `data` | Marcas de la página actual. |
+    /// | `currentPage` | Número de página devuelto, empezando en 1. |
+    /// | `pageSize` | Máximo de marcas por página (`limitPerPage`). |
+    /// | `totalItems` | Total de resultados después de aplicar el filtro. |
+    /// | `totalPages` | Total de páginas disponibles. |
     ///
     /// ## Ejemplos
     ///
     /// ```http
-    /// GET /api/marcas-autos?nombre=ford         → [{"id":2,"nombre":"Ford"}]
-    /// GET /api/marcas-autos?page=1&amp;pageSize=2   → 2 marcas + cabecera X-Total-Count: 3
-    /// GET /api/marcas-autos?page=2&amp;pageSize=2   → [{"id":3,"nombre":"Chevrolet"}]
+    /// GET /api/marcas-autos?nombre=ford
+    /// → {"data":[{"id":2,"nombre":"Ford"}],"currentPage":1,"pageSize":10,"totalItems":1,"totalPages":1}
+    /// GET /api/marcas-autos?page=2&amp;pageSize=2
+    /// → {"data":[{"id":3,"nombre":"Chevrolet"}],"currentPage":2,"pageSize":2,"totalItems":3,"totalPages":2}
     /// ```
     /// </remarks>
     /// <param name="nombre">Filtro por nombre (parcial, sin distinguir mayúsculas).</param>
     /// <param name="page">Página a devolver, mínima 1.</param>
     /// <param name="pageSize">Filas por página, entre 1 y 100.</param>
     /// <param name="cancellationToken">Cancela la consulta si la petición se aborta.</param>
-    /// <response code="200">Array de marcas: todas (sin parámetros) o la página pedida.</response>
+    /// <response code="200">Objeto paginado con las marcas y sus metadatos.</response>
     /// <response code="400">`page` o `pageSize` fuera de rango; el detalle está en `errors`.</response>
     /// <response code="500">Error inesperado al consultar la base de datos.</response>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<MarcaAutoResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResponse<MarcaAutoResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<MarcaAutoResponse>>> GetAll(
+    public async Task<ActionResult<PagedResponse<MarcaAutoResponse>>> GetAll(
         [FromQuery] string? nombre,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
@@ -126,26 +126,20 @@ public class MarcasAutosController : ControllerBase
 
         var total = await query.CountAsync(cancellationToken);
 
-        var paginar = page is not null || pageSize is not null;
         var pagina = page ?? 1;
         var tamano = pageSize ?? DefaultPageSize;
+        var totalPaginas = (int)Math.Ceiling(total / (double)tamano);
+        var offset = (long)(pagina - 1) * tamano;
+        var marcas = offset > int.MaxValue
+            ? new List<MarcaAutoResponse>()
+            : await query
+                .Skip((int)offset)
+                .Take(tamano)
+                .Select(m => new MarcaAutoResponse(m.Id, m.Nombre))
+                .ToListAsync(cancellationToken);
 
-        if (paginar)
-        {
-            query = query.Skip((pagina - 1) * tamano).Take(tamano);
-
-            var totalPaginas = (int)Math.Ceiling(total / (double)tamano);
-            Response.Headers.Append("X-Total-Count", total.ToString(CultureInfo.InvariantCulture));
-            Response.Headers.Append("X-Page", pagina.ToString(CultureInfo.InvariantCulture));
-            Response.Headers.Append("X-Page-Size", tamano.ToString(CultureInfo.InvariantCulture));
-            Response.Headers.Append("X-Total-Pages", totalPaginas.ToString(CultureInfo.InvariantCulture));
-        }
-
-        var marcas = await query
-            .Select(m => new MarcaAutoResponse(m.Id, m.Nombre))
-            .ToListAsync(cancellationToken);
-
-        return Ok(marcas);
+        return Ok(new PagedResponse<MarcaAutoResponse>(
+            marcas, pagina, tamano, total, totalPaginas));
     }
 
     /// <summary>

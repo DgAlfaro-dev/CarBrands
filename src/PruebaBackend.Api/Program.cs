@@ -40,19 +40,21 @@ builder.Services.AddSwaggerGen(options =>
             ## Paginación
 
             Añade `?page=` (mínimo 1) y/o `?pageSize=` (1 a 100). Sin esos parámetros
-            el endpoint devuelve **todas** las filas, sin cabeceras (formato original).
-            Al paginar se agregan estas cabeceras de respuesta:
+            la respuesta usa `page = 1` y `pageSize = 10`. El listado siempre
+            devuelve un objeto paginado con `data`, `currentPage`, `pageSize`,
+            `totalItems` y `totalPages`:
 
-            | Cabecera | Descripción |
+            | Campo | Descripción |
             |---|---|
-            | `X-Total-Count` | Total de filas que cumplen el filtro, antes de paginar |
-            | `X-Page` | Página devuelta |
-            | `X-Page-Size` | Tamaño de página aplicado |
-            | `X-Total-Pages` | Total de páginas disponibles |
+            | `data` | Marcas incluidas en esta página |
+            | `currentPage` | Página devuelta |
+            | `pageSize` | Máximo de elementos por página (`limitPerPage`) |
+            | `totalItems` | Total de resultados después del filtro |
+            | `totalPages` | Total de páginas disponibles |
 
             ```http
-            GET /api/marcas-autos?page=1&pageSize=2   → 2 marcas + X-Total-Count: 3
-            GET /api/marcas-autos?page=2&pageSize=2   → [{"id":3,"nombre":"Chevrolet"}]
+            GET /api/marcas-autos?page=2&pageSize=2
+            → {"data":[{"id":3,"nombre":"Chevrolet"}],"currentPage":2,"pageSize":2,"totalItems":3,"totalPages":2}
             ```
 
             Un `page` o `pageSize` fuera de rango responde `400` con `application/problem+json`

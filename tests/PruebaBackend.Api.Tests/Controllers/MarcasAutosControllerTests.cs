@@ -33,8 +33,8 @@ public class MarcasAutosControllerTests : IAsyncLifetime
         var response = await _controller.GetAll(null, null, null, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(response.Result);
-        var marcas = Assert.IsType<List<MarcaAutoResponse>>(okResult.Value);
-        Assert.Equal(3, marcas.Count);
+        var result = Assert.IsType<PagedResponse<MarcaAutoResponse>>(okResult.Value);
+        Assert.Equal(3, result.Data.Count);
     }
 
     [Fact]
@@ -43,11 +43,11 @@ public class MarcasAutosControllerTests : IAsyncLifetime
         var response = await _controller.GetAll(null, null, null, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(response.Result);
-        var marcas = Assert.IsType<List<MarcaAutoResponse>>(okResult.Value);
+        var result = Assert.IsType<PagedResponse<MarcaAutoResponse>>(okResult.Value);
         Assert.Equal(
             new[] { "Toyota", "Ford", "Chevrolet" },
-            marcas.Select(m => m.Nombre).ToArray());
-        Assert.All(marcas, m => Assert.True(m.Id > 0));
+            result.Data.Select(m => m.Nombre).ToArray());
+        Assert.All(result.Data, m => Assert.True(m.Id > 0));
     }
 
     [Fact]
@@ -62,10 +62,11 @@ public class MarcasAutosControllerTests : IAsyncLifetime
         var response = await _controller.GetAll(null, null, null, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(response.Result);
-        var marcas = Assert.IsType<List<MarcaAutoResponse>>(okResult.Value);
-        var ids = marcas.Select(m => m.Id).ToArray();
+        var result = Assert.IsType<PagedResponse<MarcaAutoResponse>>(okResult.Value);
+        var ids = result.Data.Select(m => m.Id).ToArray();
         Assert.Equal(ids.OrderBy(id => id).ToArray(), ids);
-        Assert.Equal(5, marcas.Count);
+        Assert.Equal(5, result.TotalItems);
+        Assert.Equal(5, result.Data.Count);
     }
 
     [Fact]
@@ -79,7 +80,8 @@ public class MarcasAutosControllerTests : IAsyncLifetime
         var response = await controller.GetAll(null, null, null, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(response.Result);
-        var marcas = Assert.IsType<List<MarcaAutoResponse>>(okResult.Value);
-        Assert.Empty(marcas);
+        var result = Assert.IsType<PagedResponse<MarcaAutoResponse>>(okResult.Value);
+        Assert.Empty(result.Data);
+        Assert.Equal(0, result.TotalItems);
     }
 }

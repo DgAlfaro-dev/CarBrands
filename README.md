@@ -13,7 +13,7 @@ entorno completo por **Docker Compose**.
 | Data seed con ≥ 3 marcas | `HasData` en `MarcaAutoConfiguration` (Toyota, Ford, Chevrolet) versionado **dentro** de la migración |
 | `MarcasAutosController` con listado, filtro, paginación y consulta por id | `GET /api/marcas-autos` y `GET /api/marcas-autos/{id}` |
 | Pruebas XUnit con contexto en memoria | Pruebas unitarias (EF InMemory) + integración (`WebApplicationFactory`) |
-| Cobertura ≥ 70% | **98.65% líneas / 95.83% ramas**, umbral 70% aplicado en cada `dotnet test` |
+| Cobertura ≥ 70% | **98.68% líneas / 93.47% ramas**, umbral 70% aplicado en cada `dotnet test` |
 | `docker-compose.yml` (PostgreSQL + API) | Healthcheck, volumen, credenciales y connection string por variables de entorno |
 
 ## Stack tecnológico
@@ -117,7 +117,7 @@ dotnet test
 
 - **36 tests** en verde (unitarios con contexto **en memoria** + integración con la API real).
 - Genera el reporte en `tests/PruebaBackend.Api.Tests/coverage/coverage.cobertura.xml`.
-- **Cobertura verificada: 98.65% líneas · 95.83% ramas · 100% métodos.**
+- **Cobertura verificada: 98.68% líneas · 93.47% ramas · 100% métodos.**
 - El `csproj` de tests define umbrales (**70% líneas y ramas**): si la cobertura
   baja del mínimo, `dotnet test` **falla** (igual que en CI).
 - Exclusiones: solo las migraciones (código generado) y el propio assembly de tests.
@@ -134,33 +134,41 @@ Devuelve las marcas ordenadas por id. Admite filtro por nombre y paginación:
 | Parámetro | Tipo | Descripción |
 |---|---|---|
 | `nombre` | texto, opcional | Busca coincidencias parciales sin distinguir mayúsculas. Por ejemplo, `?nombre=toy` encuentra `Toyota`. Los espacios al inicio y al final se ignoran. |
-| `page` | entero, opcional | Número de página, empezando en `1`. Si se envía sin `pageSize`, el tamaño de página predeterminado es `10`. |
-| `pageSize` | entero, opcional | Resultados por página; rango permitido: `1` a `100`. Si se envía sin `page`, se usa la página `1`. |
+| `page` | entero, opcional | Número de página, empezando en `1`. Valor predeterminado: `1`. |
+| `pageSize` | entero, opcional | Resultados por página; rango permitido: `1` a `100`. Valor predeterminado: `10`. |
 
-Si no se envía `page` ni `pageSize`, se conserva el listado completo. Se pueden combinar el filtro y la paginación, por ejemplo:
+La respuesta siempre incluye los resultados dentro de `data`, junto con la página actual y los metadatos de paginación. Se pueden combinar el filtro y la paginación, por ejemplo:
 
 ```http
 GET /api/marcas-autos?nombre=to&page=1&pageSize=10
 ```
 
-Cuando se solicita paginación, la respuesta incluye estas cabeceras. `X-Total-Count` cuenta los resultados después del filtro y antes de paginar:
+El cuerpo de respuesta tiene esta estructura. `totalItems` cuenta los resultados después del filtro y antes de paginar:
 
-| Cabecera | Descripción |
+| Campo | Descripción |
 |---|---|
-| `X-Total-Count` | Cantidad total de resultados que coinciden con el filtro. |
-| `X-Page` | Página devuelta. |
-| `X-Page-Size` | Tamaño aplicado a cada página. |
-| `X-Total-Pages` | Cantidad total de páginas. |
+| `data` | Marcas incluidas en la página solicitada. |
+| `currentPage` | Número de página devuelto. |
+| `pageSize` | Límite de resultados por página. |
+| `totalItems` | Cantidad total de resultados que coinciden con el filtro. |
+| `totalPages` | Cantidad total de páginas. |
 
-`page` menor que `1`, o `pageSize` fuera del rango permitido, devuelve `400 Bad Request` con `ValidationProblemDetails`. Una página que supera la última disponible devuelve `200 OK` con una lista vacía y las cabeceras de paginación.
+Ejemplo de respuesta:
 
 ```json
-[
-  { "id": 1, "nombre": "Toyota" },
-  { "id": 2, "nombre": "Ford" },
-  { "id": 3, "nombre": "Chevrolet" }
-]
+{
+  "data": [
+    { "id": 1, "nombre": "Toyota" },
+    { "id": 2, "nombre": "Ford" }
+  ],
+  "currentPage": 1,
+  "pageSize": 2,
+  "totalItems": 3,
+  "totalPages": 2
+}
 ```
+
+`page` menor que `1`, o `pageSize` fuera del rango permitido, devuelve `400 Bad Request` con `ValidationProblemDetails`. Una página que supera la última disponible devuelve `200 OK` con `data` vacío y los metadatos de paginación.
 
 | Código | Cuando |
 |---|---|
