@@ -70,6 +70,9 @@ public class MarcasAutosEndpointTests : IClassFixture<MarcasAutosApiFactory>
 
         // The lookup endpoint and the query parameters are part of the contract.
         Assert.Contains("/api/marcas-autos/{id}", schema);
+        Assert.Contains("\"post\"", schema);
+        Assert.Contains("\"put\"", schema);
+        Assert.Contains("\"delete\"", schema);
         Assert.Contains("\"nombre\"", schema);
         Assert.Contains("\"page\"", schema);
         Assert.Contains("\"pageSize\"", schema);

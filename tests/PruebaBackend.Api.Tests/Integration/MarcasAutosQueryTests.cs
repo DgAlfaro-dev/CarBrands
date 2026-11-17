@@ -48,6 +48,61 @@ public class MarcasAutosQueryTests : IClassFixture<MarcasAutosApiFactory>
     }
 
     [Fact]
+    public async Task Crud_CreateUpdateAndDelete_ReturnsExpectedResponses()
+    {
+        var createResponse = await _client.PostAsJsonAsync(
+            "/api/marcas-autos", new MarcaAutoRequest { Nombre = "  Honda  " });
+
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        Assert.NotNull(createResponse.Headers.Location);
+        var created = await createResponse.Content.ReadFromJsonAsync<MarcaAutoResponse>();
+        Assert.NotNull(created);
+        Assert.Equal("Honda", created.Nombre);
+
+        var updateResponse = await _client.PutAsJsonAsync(
+            $"/api/marcas-autos/{created.Id}", new MarcaAutoRequest { Nombre = "Honda Motor" });
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<MarcaAutoResponse>();
+        Assert.NotNull(updated);
+        Assert.Equal(created.Id, updated.Id);
+        Assert.Equal("Honda Motor", updated.Nombre);
+
+        var deleteResponse = await _client.DeleteAsync($"/api/marcas-autos/{created.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        var getResponse = await _client.GetAsync($"/api/marcas-autos/{created.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_EmptyName_ReturnsValidationProblem()
+    {
+        var response = await _client.PostAsJsonAsync(
+            "/api/marcas-autos", new MarcaAutoRequest { Nombre = " " });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Theory]
+    [InlineData("PUT")]
+    [InlineData("DELETE")]
+    public async Task UpdateOrDelete_UnknownId_ReturnsNotFound(string method)
+    {
+        var request = new HttpRequestMessage(new HttpMethod(method), "/api/marcas-autos/9999");
+        if (method == "PUT")
+        {
+            request.Content = JsonContent.Create(new MarcaAutoRequest { Nombre = "Honda" });
+        }
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
     public async Task GetByNombre_CaseInsensitiveContains_ReturnsOnlyMatches()
     {
         var response = await _client.GetAsync("/api/marcas-autos?nombre=TOY");

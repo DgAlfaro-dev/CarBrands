@@ -11,9 +11,9 @@ entorno completo por **Docker Compose**.
 | `DbContext` conectado a PostgreSQL con EF | `Data/MarcasAutosDbContext.cs` + provider Npgsql, cadena por variables de entorno |
 | Migración de la tabla `MarcasAutos` | `Migrations/..._CreateMarcasAutos.cs` (tabla + `__EFMigrationsHistory`) |
 | Data seed con ≥ 3 marcas | `HasData` en `MarcaAutoConfiguration` (Toyota, Ford, Chevrolet) versionado **dentro** de la migración |
-| `MarcasAutosController` con listado, filtro, paginación y consulta por id | `GET /api/marcas-autos` y `GET /api/marcas-autos/{id}` |
+| `MarcasAutosController` con CRUD completo, filtro y paginación | `GET`, `POST`, `PUT` y `DELETE` en `/api/marcas-autos` |
 | Pruebas XUnit con contexto en memoria | Pruebas unitarias (EF InMemory) + integración (`WebApplicationFactory`) |
-| Cobertura ≥ 70% | **98.39% líneas / 93.47% ramas**, umbral 70% aplicado en cada `dotnet test` |
+| Cobertura ≥ 70% | **98.66% líneas / 94% ramas**, umbral 70% aplicado en cada `dotnet test` |
 | `docker-compose.yml` (PostgreSQL + API) | Healthcheck, volumen, credenciales y connection string por variables de entorno |
 
 ## Stack tecnológico
@@ -115,9 +115,9 @@ docker run --rm -p 8080:8080 \
 dotnet test
 ```
 
-- **36 tests** en verde (unitarios con contexto **en memoria** + integración con la API real).
+- **40 tests** en verde (unitarios con contexto **en memoria** + integración con la API real).
 - Genera el reporte en `tests/PruebaBackend.Api.Tests/coverage/coverage.cobertura.xml`.
-- **Cobertura verificada: 98.39% líneas · 93.47% ramas · 100% métodos.**
+- **Cobertura verificada: 98.66% líneas · 94% ramas · 100% métodos.**
 - El `csproj` de tests define umbrales (**70% líneas y ramas**): si la cobertura
   baja del mínimo, `dotnet test` **falla** (igual que en CI).
 - Exclusiones: solo las migraciones (código generado) y el propio assembly de tests.
@@ -180,6 +180,30 @@ Ejemplo de respuesta:
 ### `GET /api/marcas-autos/{id}`
 
 Devuelve una marca por su identificador. Por ejemplo, `GET /api/marcas-autos/1` devuelve `200 OK` con `{ "id": 1, "nombre": "Toyota" }`. Si no existe una marca con ese id, responde `404 Not Found` con `ProblemDetails`.
+
+### `POST /api/marcas-autos`
+
+Crea una marca. Envía `nombre` en el cuerpo JSON; es obligatorio y admite hasta 100 caracteres:
+
+```json
+{ "nombre": "Honda" }
+```
+
+Responde `201 Created`, con la marca creada y el encabezado `Location` apuntando a su endpoint `GET` por id. Un nombre vacío o demasiado largo responde `400 Bad Request` con `ValidationProblemDetails`.
+
+### `PUT /api/marcas-autos/{id}`
+
+Actualiza el nombre de una marca existente. El id va en la ruta y el cuerpo solo contiene el nuevo nombre:
+
+```json
+{ "nombre": "Honda Motor" }
+```
+
+Responde `200 OK` con la marca actualizada, `400 Bad Request` si el nombre no es válido o `404 Not Found` si el id no existe.
+
+### `DELETE /api/marcas-autos/{id}`
+
+Elimina la marca indicada. Responde `204 No Content` al eliminarla o `404 Not Found` si el id no existe.
 
 Swagger UI: http://localhost:8080/swagger (habilitado en todos los entornos para
 que la API pueda evaluarse donde se despliegue).

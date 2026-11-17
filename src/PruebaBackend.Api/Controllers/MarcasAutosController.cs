@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using PruebaBackend.Api.Data;
 using PruebaBackend.Api.Dtos;
+using PruebaBackend.Api.Entities;
 
 namespace PruebaBackend.Api.Controllers;
 
 /// <summary>
-/// Read-only endpoints for the car brands catalog: list with search and
-/// pagination, and lookup by id.
+/// CRUD endpoints for the car brands catalog, including a searchable,
+/// paginated list and lookup by id.
 /// </summary>
 [ApiController]
 [Route("api/marcas-autos")]
@@ -181,5 +182,116 @@ public class MarcasAutosController : ControllerBase
         }
 
         return Ok(new MarcaAutoResponse(marca.Id, marca.Nombre));
+    }
+
+    /// <summary>Crea una marca de autos.</summary>
+    /// <remarks>
+    /// Envía un cuerpo JSON con `nombre`. El nombre es obligatorio y admite
+    /// hasta 100 caracteres. La respuesta incluye la ruta de la marca creada.
+    ///
+    /// ```json
+    /// { "nombre": "Honda" }
+    /// ```
+    /// </remarks>
+    /// <param name="request">Nombre de la marca que se creará.</param>
+    /// <param name="cancellationToken">Cancela la operación si la petición se aborta.</param>
+    /// <response code="201">Marca creada; el encabezado `Location` apunta a GET por id.</response>
+    /// <response code="400">El nombre está vacío o excede los 100 caracteres.</response>
+    /// <response code="500">Error inesperado al guardar en la base de datos.</response>
+    [HttpPost]
+    [ProducesResponseType(typeof(MarcaAutoResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<MarcaAutoResponse>> Create(
+        [FromBody] MarcaAutoRequest request,
+        CancellationToken cancellationToken)
+    {
+        var marca = new MarcaAuto { Nombre = request.Nombre.Trim() };
+        _dbContext.MarcasAutos.Add(marca);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var response = new MarcaAutoResponse(marca.Id, marca.Nombre);
+        return CreatedAtAction(nameof(GetById), new { id = marca.Id }, response);
+    }
+
+    /// <summary>Actualiza el nombre de una marca existente.</summary>
+    /// <remarks>
+    /// Envía el nuevo nombre en el cuerpo JSON. El id se indica en la ruta y
+    /// no se incluye en el cuerpo.
+    ///
+    /// ```json
+    /// { "nombre": "Honda Motor" }
+    /// ```
+    /// </remarks>
+    /// <param name="id">Identificador de la marca que se actualizará.</param>
+    /// <param name="request">Nuevo nombre de la marca.</param>
+    /// <param name="cancellationToken">Cancela la operación si la petición se aborta.</param>
+    /// <response code="200">Marca actualizada.</response>
+    /// <response code="400">El nombre está vacío o excede los 100 caracteres.</response>
+    /// <response code="404">No existe una marca con ese id.</response>
+    /// <response code="500">Error inesperado al guardar en la base de datos.</response>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(MarcaAutoResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<MarcaAutoResponse>> Update(
+        [FromRoute] int id,
+        [FromBody] MarcaAutoRequest request,
+        CancellationToken cancellationToken)
+    {
+        var marca = await _dbContext.MarcasAutos
+            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+
+        if (marca is null)
+        {
+            return CreateNotFoundProblem(id);
+        }
+
+        marca.Nombre = request.Nombre.Trim();
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return Ok(new MarcaAutoResponse(marca.Id, marca.Nombre));
+    }
+
+    /// <summary>Elimina una marca existente.</summary>
+    /// <param name="id">Identificador de la marca que se eliminará.</param>
+    /// <param name="cancellationToken">Cancela la operación si la petición se aborta.</param>
+    /// <response code="204">Marca eliminada.</response>
+    /// <response code="404">No existe una marca con ese id.</response>
+    /// <response code="500">Error inesperado al guardar en la base de datos.</response>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Delete(
+        [FromRoute] int id,
+        CancellationToken cancellationToken)
+    {
+        var marca = await _dbContext.MarcasAutos
+            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+
+        if (marca is null)
+        {
+            return CreateNotFoundProblem(id);
+        }
+
+        _dbContext.MarcasAutos.Remove(marca);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
+    }
+
+    private NotFoundObjectResult CreateNotFoundProblem(int id)
+    {
+        var problem = new ProblemDetails
+        {
+            Status = StatusCodes.Status404NotFound,
+            Title = "Marca no encontrada",
+            Detail = $"No existe ninguna marca de autos con id {id}.",
+            Type = "https://tools.ietf.org/html/rfc9110#section-15.5.5"
+        };
+
+        return NotFound(problem);
     }
 }
