@@ -36,14 +36,19 @@ public class MarcasAutosEndpointTests : IClassFixture<MarcasAutosApiFactory>
         Assert.Equal(10, result.PageSize);
     }
 
-    // The root path is intentionally NOT an endpoint: only /api/marcas-autos
-    // exists, so both the bare root and unknown routes must answer 404.
-    [Theory]
-    [InlineData("/")]
-    [InlineData("/api/no-existe")]
-    public async Task GetUnknownRoute_ReturnsNotFound(string path)
+    [Fact]
+    public async Task GetRoot_RedirectsToSwagger()
     {
-        var response = await _client.GetAsync(path);
+        var response = await _client.GetAsync("/");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.StartsWith("/swagger", response.RequestMessage?.RequestUri?.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task GetUnknownRoute_ReturnsNotFound()
+    {
+        var response = await _client.GetAsync("/api/no-existe");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }

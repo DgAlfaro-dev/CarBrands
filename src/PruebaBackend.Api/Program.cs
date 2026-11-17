@@ -66,6 +66,7 @@ app.UseSwaggerUI(options =>
 
 app.UseAuthorization();
 
+app.MapGet("/", () => Results.Redirect("/swagger"));
 app.MapControllers();
 
 // Apply pending migrations on startup so `docker compose up` leaves the
