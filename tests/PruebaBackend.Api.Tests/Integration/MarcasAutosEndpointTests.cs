@@ -62,6 +62,7 @@ public class MarcasAutosEndpointTests : IClassFixture<MarcasAutosApiFactory>
 
         var schema = await response.Content.ReadAsStringAsync();
         Assert.Contains("MarcasAutos", schema);
+        Assert.DoesNotContain("PruebaBackend.Api", schema);
     }
 
     [Fact]
